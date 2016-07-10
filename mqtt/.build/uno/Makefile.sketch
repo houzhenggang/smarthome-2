@@ -1,0 +1,14 @@
+
+
+
+
+
+.build/uno/src/mqtt_basic.cpp : src/mqtt_basic.ino
+	@mkdir -p .build/uno/src
+	@echo [93msrc/mqtt_basic.ino[0m
+	@/usr/local/bin/ino preproc  -o $@ $^
+
+
+all : .build/uno/src/mqtt_basic.cpp
+	@true
+

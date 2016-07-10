@@ -1,0 +1,20 @@
+sitemap LivingRoom label="Menu"
+{
+
+    Frame label="Relay" 
+    {
+        Switch item=mqttsw1 label="MQTT Switch 1"    
+    }
+    Frame label="Environment"
+    {
+        Text item=temp
+        Text item=humi
+    }
+    Frame label="Lamp"
+    {
+        Switch item=lamp_white label="Lamp"
+        Slider item=lamp_brightness label="Lamp Brightness"
+        Colorpicker item=Light_Party label="Lamp Color"
+    }
+
+}

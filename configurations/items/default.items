@@ -1,0 +1,9 @@
+Switch mqttsw1 "Switch 1" (all) {mqtt=">[local:homehub/livingroom/relayctl0:command:on:1],>[local:homehub/livingroom/relayctl0:command:off:0]"}
+Number temp "Temperature [%.1f °C] " <temperature> (all) {mqtt="<[local:homehub/livingroom/tempctl0:state:default]"}
+Number humi "Humidity [%.1f %%] " <temperature> (all) {mqtt="<[local:homehub/livingroom/humictl0:state:default]"}
+
+Switch lamp {milight="bridge1;6;whiteMode"}
+Dimmer lamp_brightness {milight="bridge1;6;brightness;27"}
+Dimmer lamp_colortemp {milight="bridge1;6;colorTemperature"}
+Switch lamp_white {milight="bridge1;6;whiteMode"}
+Color Light_Party           {milight="bridge1;6;rgb"}
