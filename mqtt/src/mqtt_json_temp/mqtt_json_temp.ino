@@ -1,21 +1,24 @@
-
+#include <ArduinoJson.h>
 #include <SPI.h>
 #include <Ethernet.h>
 #include "PubSubClient.h"
-#include "dht11.h"
+#include "DHT.h"
 
 // Update these with values suitable for your network.
 byte mac[]    = {  0xAE, 0xED, 0xBA, 0xF2, 0xFE, 0xED };
 IPAddress ip(192,168,70,133);
-IPAddress server(192,168,70,12);
+IPAddress server(192,168,70,31);
 
 bool relay = 0;
 bool call = 0;
-char message_buff[100];
+char message_buf[100];
 byte u_iter = 0;
 
-dht11 DHT11;
-#define DHT11PIN 2
+
+#define DHTTYPE DHT22
+#define DHTPIN 2
+
+DHT dht(DHTPIN, DHTTYPE);
 
 // handles message arrived on subscribed topic(s)
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -27,11 +30,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     // create character buffer with ending null terminator (string)
     for(i=0; i<length; i++) {
-        message_buff[i] = payload[i];
+        message_buf[i] = payload[i];
     }
-    message_buff[i] = '\0';
+    message_buf[i] = '\0';
 
-    String msgString = String(message_buff);
+    String msgString = String(message_buf);
 
     Serial.println("Payload: " + msgString);
 
@@ -50,12 +53,7 @@ void reconnect() {
         // Attempt to connect
         if (client.connect("tempctl0")) {
             Serial.println("connected");
-            // Once connected, publish an announcement...
-            //client.publish("homehub/clients","homehub/livingroom/tempctl0 CONNECTED");
-            // ... and resubscribe
-            //client.subscribe("homehub/livingroom/tempctl0");
             client.subscribe("homehub/clients");
-            //client.publish("home/garden/fountain", "Hello from Arduino");
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
@@ -68,7 +66,10 @@ void reconnect() {
 
 void setup()
 {
-    Serial.begin(57600);
+    Serial.begin(9600);
+    
+    dht.begin();
+
 
     client.setServer(server, 1883);
     client.setCallback(callback);
@@ -87,35 +88,30 @@ void loop()
     
   Serial.println("\n");
 
-  int chk = DHT11.read(DHT11PIN);
+  StaticJsonBuffer<200> buf;
 
-  Serial.print("Read sensor: ");
-  switch (chk)
-  {
-    case DHTLIB_OK: 
-		Serial.println("OK"); 
-		break;
-    case DHTLIB_ERROR_CHECKSUM: 
-		Serial.println("Checksum error"); 
-		break;
-    case DHTLIB_ERROR_TIMEOUT: 
-		Serial.println("Time out error"); 
-		break;
-    default: 
-		Serial.println("Unknown error"); 
-		break;
+  JsonObject& root = buf.createObject();
+  
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+
+    // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
   }
-  int temperature = DHT11.temperature;
-  int humidity = DHT11.humidity;
-  String s_temp = String(temperature - 2);
-  char c_temp[sizeof(s_temp)];
-  s_temp.toCharArray(c_temp, sizeof(c_temp));
-  String s_humi = String(humidity);
-  char c_humi[sizeof(s_humi)];
-  s_temp.toCharArray(c_humi, sizeof(c_humi));
+  root["temperature"] = t;
+  root["humidity"] = h;
+  root.prettyPrintTo(Serial);
+  Serial.println("");
+  
     if(u_iter++ == 10){
-      client.publish("homehub/livingroom/tempctl0", c_temp);
-      client.publish("homehub/livingroom/humictl0", c_humi);
+      char data[200];
+      root.printTo(message_buf, root.measureLength() + 1);
+      client.publish("homehub/livingroom/tempctl0", message_buf, true);
       u_iter = 0;
     }
 
